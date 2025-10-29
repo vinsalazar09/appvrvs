@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VRVS – Plataforma Híbrida</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+  :root{
+    --amber-1:#ffb347; --amber-2:#ff9933; --amber-3:#ff8c1a;
+    --turq-1:#1fb9b5; --turq-2:#0aa7a3; --turq-3:#0a8e91;
+    --ink:#0c1821; --text:#f8fafc; --muted:#cfe8e6;
+    --card:#0f2330cc; --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    --chip:rgba(255,255,255,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; color:var(--text);
+    font:15px/1.55 ui-sans-serif,-apple-system,Segoe UI,Roboto,Inter,Arial;
+    background:#000; overflow-x:hidden; -webkit-font-smoothing:antialiased;
+  }
+  .bg{ position:fixed; inset:0; z-index:-2;
+    background:
+      radial-gradient(1200px 800px at 20% 10%, var(--amber-1), transparent 60%),
+      radial-gradient(1000px 900px at 90% 90%, var(--turq-1), transparent 60%),
+      radial-gradient(900px 700px at 30% 80%, var(--amber-2), transparent 60%),
+      radial-gradient(1000px 1000px at 80% 10%, var(--turq-2), transparent 60%),
+      linear-gradient(180deg, #0b0f14, #0b1218 50%, #09131a);
+    filter:saturate(1.05);
+  }
+  .bg-anim{ position:fixed; inset:-10%; z-index:-1; opacity:.9;
+    background: conic-gradient(from 0deg at 50% 50%,
+      rgba(255,195,113,.25), rgba(26,198,194,.22),
+      rgba(255,153,51,.22), rgba(15,160,160,.22), rgba(255,195,113,.25));
+    animation: spin 40s linear infinite; will-change:transform; transform:translateZ(0);
+  }
+  @keyframes spin{ to{ transform: rotate(360deg) } }
+  .grid{ position:fixed; inset:0; z-index:0; opacity:.14; pointer-events:none;
+    background-image:
+      linear-gradient(transparent 31px, rgba(31,185,181,.35) 32px, transparent 33px),
+      linear-gradient(90deg, transparent 31px, rgba(31,185,181,.35) 32px, transparent 33px);
+    background-size:32px 32px; mix-blend-mode:screen;
+  }
+  @media (prefers-reduced-motion: reduce){ .bg-anim{ animation:none } }
+  .splash{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, var(--amber-2), var(--amber-1));
+    z-index:9999;
+  }
+  .splash img{
+    width:min(70vw, 520px); height:auto; opacity:0; transform:scale(.86);
+    filter: drop-shadow(0 18px 50px rgba(0,0,0,.35));
+    animation: splashIn 1.9s ease forwards;
+  }
+  @keyframes splashIn{
+    12%{ opacity:1; transform:scale(1.06) }
+    100%{ opacity:1; transform:scale(1) }
+  }
+  header{ padding:18px 16px; }
+  .wrap{ max-width:1200px; margin:0 auto; padding:0 14px 64px }
+  .brand{ display:flex; align-items:center; gap:12px }
+  .logo{ width:42px; height:42px; border-radius:12px;
+    background:radial-gradient(circle at 30% 30%, var(--amber-1), var(--amber-2) 60%, #7a3b00 100%);
+    box-shadow: 0 0 0 2px rgba(255,255,255,.06), 0 6px 18px rgba(0,0,0,.45);
+    position:relative; overflow:hidden;
+  }
+  .logo::after{ content:""; position:absolute; inset:6px; border-radius:10px; border:2px solid rgba(31,185,181,.65); }
+  nav.tabs{ display:flex; flex-wrap:wrap; gap:8px }
+  .tab{
+    padding:10px 12px; border-radius:999px; background:var(--chip);
+    border:1px solid rgba(255,255,255,.12); color:var(--muted); cursor:pointer
+  }
+  .tab[aria-selected="true"]{ background:rgba(255,255,255,.1); color:#e8feff; box-shadow:var(--shadow) }
+  .row{ display:flex; flex-wrap:wrap; gap:12px; align-items:center }
+  .spacer{ flex:1 }
+  .card{
+    background: var(--card); border:1px solid rgba(31,185,181,.25);
+    border-radius: var(--radius); box-shadow: var(--shadow); overflow:hidden; margin:10px 0;
+  }
+  .body{ padding:16px }
+  h1{ margin:0; font-size:20px } h2{ margin:0 0 10px; font-size:16px; letter-spacing:.3px }
+  label{ display:block; color:var(--muted); font-size:12px; margin-bottom:6px }
+  input,select,textarea{
+    width:100%; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.16); background:#06131a; color:#e6fbfb; outline:none
+  }
+  table{ width:100%; border-collapse:collapse; font-size:13px }
+  th,td{ padding:10px; border-bottom:1px solid rgba(255,255,255,.08); text-align:left }
+  th{ color:var(--muted) } tbody tr:hover{ background: rgba(31,185,181,.06) }
+  .mono{ font-variant-numeric:tabular-nums; font-family:ui-monospace,Menlo,Consolas,monospace }
+  .actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:8px }
+  .btn{ padding:10px 12px; border-radius:12px; border:0; cursor:pointer; font-weight:800;
+    background:linear-gradient(180deg,var(--turq-1),var(--turq-2)); color:#052225; box-shadow:0 6px 20px rgba(10,142,145,.35), inset 0 1px 0 rgba(255,255,255,.35);
+  }
+  .btn-ghost{ background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,.15) }
+  .danger{ background:rgba(255,107,107,.12); border:1px solid rgba(255,107,107,.35); color:#ffd2d2; border-radius:12px; padding:8px 10px }
+  .view{ display:none } .view.active{ display:block }
+  footer{ padding:16px; text-align:center; color:var(--muted); font-size:12px }
+  @media (prefers-reduced-motion: reduce){
+    .splash img{ animation:none; opacity:1; transform:none }
+  }
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="bg-anim"></div>
+  <div class="grid"></div>
+
+  <div class="splash" id="splash">
+    <img src="icons/splash.png" alt="VRVS" onerror="this.onerror=null;this.src='icons/vrvs-512.png'">
+  </div>
+
+  <header class="wrap">
+    <div class="row">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>VRVS – Plataforma Híbrida</h1>
+      </div>
+      <span class="spacer"></span>
+      <nav class="tabs">
+        <button class="tab" data-tab="dados" aria-selected="true">Dados</button>
+        <button class="tab" data-tab="registrar">Registrar</button>
+        <button class="tab" data-tab="tarefa">Tarefa</button>
+        <button class="tab" data-tab="agenda">Agenda</button>
+        <button class="tab" data-tab="dashboard">Dashboard</button>
+        <button class="tab" data-tab="sync">Sync</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section id="dados" class="view active">
+      <div class="card"><div class="body">
+        <h2>Cadastro de temas (DADOS)</h2>
+        <div class="row">
+          <div style="flex:1 1 180px"><label>Área</label><input id="dArea" placeholder="Ex.: Ombro e Cotovelo"/></div>
+          <div style="flex:2 1 320px"><label>Tema</label><input id="dTema" placeholder="Ex.: Capsulite adesiva"/></div>
+          <div style="flex:1 1 120px"><label>Status</label><select id="dStatus"><option>Em estudo</option><option>Planejado</option><option>Revisado</option></select></div>
+          <div style="flex:1 1 100px"><label>Prior.</label><select id="dPrior"><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option></select></div>
+          <div style="flex:1 1 120px"><label>Dific.</label><select id="dDific"><option>Fácil</option><option>Médio</option><option>Difícil</option></select></div>
+        </div>
+        <div class="row">
+          <div style="flex:1 1 120px"><label>Rend. (%)</label><input id="dRend" type="number" min="0" max="100" placeholder="0–100"/></div>
+          <div style="flex:1 1 100px"><label>Sessões</label><input id="dSess" type="number" min="0" value="0"/></div>
+          <div style="flex:1 1 160px"><label>Últ.estudo</label><input id="dUlt" type="date"/></div>
+          <div style="flex:1 1 160px"><label>Agenda</label><input id="dAgd" type="date"/></div>
+          <div style="flex:1 1 120px"><label>Tempo (min)</label><input id="dTempo" type="number" min="0" value="0"/></div>
+          <div style="flex:2 1 260px"><label>Obs.</label><input id="dObs"/></div>
+          <div style="flex:2 1 260px"><label>Tipo</label><input id="dTipo" placeholder="ex.: Revisão ativa"/></div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btnAddTema">Adicionar tema</button>
+          <button class="btn-ghost" id="btnSaveTema" disabled>Salvar edição</button>
+          <button class="btn-ghost" id="btnCancelEdit" disabled>Cancelar edição</button>
+        </div>
+        <div class="danger" style="margin-top:8px">Atenção: <b>Tema</b> é chave única. Evite duplicar o mesmo título.</div>
+      </div></div>
+
+      <div class="card"><div class="body">
+        <h2>Lista de temas</h2>
+        <div style="max-height:520px;overflow:auto">
+          <table id="tblDados"><thead><tr>
+            <th>Área</th><th>Tema</th><th>Status</th><th>Prior.</th><th>Dific.</th>
+            <th class="mono">Rend</th><th class="mono">Sess</th><th class="mono">Últ.</th><th class="mono">Agenda</th><th class="mono">Tempo</th><th>Tipo</th><th>Ações</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div></div>
+    </section>
+
+    <section id="registrar" class="view">
+      <div class="card"><div class="body">
+        <h2>Registrar estudo / feedback</h2>
+        <div class="row">
+          <div style="flex:2 1 300px"><label>Tema</label><select id="fbTema"></select></div>
+          <div style="flex:1 1 160px"><label>Área</label><input id="fbArea" disabled/></div>
+          <div style="flex:1 1 140px"><label>Data</label><input id="fbData" type="date"/></div>
+          <div style="flex:1 1 120px"><label>Tempo (min)</label><input id="fbTempo" type="number" min="0" step="5"/></div>
+        </div>
+        <div class="row">
+          <div style="flex:1 1 140px"><label>Rendimento (%)</label><input id="fbRend" type="number" min="0" max="100"/></div>
+          <div style="flex:1 1 140px"><label>Dificuldade</label><select id="fbDific"><option>Fácil</option><option>Médio</option><option>Difícil</option></select></div>
+          <div style="flex:1 1 140px"><label>Status</label><select id="fbStatus"><option>Em estudo</option><option>Planejado</option><option>Revisado</option></select></div>
+          <div style="flex:1 1 160px"><label>Prioridade</label><select id="fbPrior"><option>1</option><option>2</option><option>3</option><option>4</option><option selected>5</option></select></div>
+        </div>
+        <div class="row">
+          <div style="flex:2 1 320px"><label>Observações</label><textarea id="fbObs"></textarea></div>
+          <div style="flex:1 1 260px"><label>Sugestão (TIPO)</label><input id="fbSug"/></div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btnRegistrar">Salvar registro</button>
+          <button class="btn-ghost" id="btnDesfazer">Desfazer (tema)</button>
+        </div>
+      </div></div>
+    </section>
+
+    <section id="tarefa" class="view">
+      <div class="card"><div class="body">
+        <h2>Tarefas de hoje</h2>
+        <div style="max-height:520px;overflow:auto">
+          <table id="tblTarefa"><thead><tr>
+            <th>✓</th><th>Área</th><th>Tema</th><th>Status</th><th>Prior.</th><th>Dific.</th>
+            <th class="mono">Rend</th><th class="mono">Sess</th><th class="mono">Últ.</th><th class="mono">Agenda</th><th>Tipo</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div></div>
+    </section>
+
+    <section id="agenda" class="view">
+      <div class="card"><div class="body">
+        <h2>Agenda completa</h2>
+        <div style="max-height:560px;overflow:auto">
+          <table id="tblAgenda"><thead><tr>
+            <th>Área</th><th>Tema</th><th>Status</th><th>Prior.</th><th>Dific.</th>
+            <th class="mono">Rend</th><th class="mono">Sess</th><th class="mono">Últ.</th><th class="mono">Agenda</th><th>Tipo</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+      </div></div>
+    </section>
+
+    <section id="dashboard" class="view">
+      <div class="card"><div class="body">
+        <h2>Rendimento por Área (cumulativo)</h2>
+        <canvas id="barAreas" width="720" height="320"></canvas>
+        <div id="legendAreas" class="row" style="margin-top:8px"></div>
+      </div></div>
+      <div class="card"><div class="body">
+        <h2>Rendimento por Sessões (por área)</h2>
+        <canvas id="lineSessoes" width="720" height="320"></canvas>
+      </div></div>
+      <div class="card"><div class="body">
+        <h2>Comparativo Radar (cumulativo)</h2>
+        <canvas id="radarAreas" width="720" height="360"></canvas>
+      </div></div>
+    </section>
+
+    <section id="sync" class="view">
+      <div class="card"><div class="body">
+        <h2>Sincronização (CSV e Backup JSON)</h2>
+        <p class="muted">Use CSV para conversar com a planilha (DADOS/HISTÓRICO) e JSON para backup completo. 100% offline.</p>
+        <div style="font-size:12px;color:#a9f1ef;margin:6px 0">
+          <b>DADOS.csv</b>: Área,Tema,Status,Prior.,Dific.,Rend.,Sessões,Últ.estudo,Agenda,Tempo(min),Obs.,Tipo<br/>
+          <b>HISTORICO.csv</b>: Data,Área,Tema,Rendimento,Sessões,Tempo(min),Dificuldade,Observações
+        </div>
+        <div class="actions">
+          <label class="btn-ghost">Importar CSV DADOS<input id="fileCsvDados" type="file" accept=".csv" style="display:none"/></label>
+          <label class="btn-ghost">Importar CSV HISTORICO<input id="fileCsvHist" type="file" accept=".csv" style="display:none"/></label>
+          <button class="btn-ghost" id="btnCsvDados">Exportar CSV DADOS</button>
+          <button class="btn-ghost" id="btnCsvHist">Exportar CSV HISTORICO</button>
+        </div>
+        <div class="actions" style="margin-top:8px">
+          <button class="btn-ghost" id="btnExport">Exportar Backup (JSON)</button>
+          <label class="btn-ghost">Importar Backup (JSON)<input id="fileImport" type="file" accept="application/json" style="display:none"/></label>
+          <button class="btn-ghost" id="btnReset">Resetar estado</button>
+        </div>
+      </div></div>
+    </section>
+
+  </main>
+
+  <footer>VRVS • Híbrido (estética Amber/Turquoise + funcionalidades completas) • Sem dependências externas</footer>
+
+<script>
+(function(){'use strict';
+  window.addEventListener('load', ()=>{ setTimeout(()=>{ const sp=document.getElementById('splash'); if(sp) sp.style.display='none'; }, 1100); });
+
+  const state = { dados: [], hist: [], _log: [] };
+  const LS_KEY='vrvs_hibrido_v1';
+
+  const $ = s=>document.querySelector(s), $$ = s=>Array.from(document.querySelectorAll(s));
+  const titleCase = s => String(s||'').trim().toLowerCase().replace(/(^|\s|\/|-)([a-zà-ú])/g,(m,p1,p2)=> p1 + p2.toUpperCase());
+  const to01 = v => { if(typeof v==='number') return v>1? v/100:v; const n=parseFloat(String(v||'').replace('%','').replace(',','.')); return isNaN(n)?0:(n>1? n/100:n); };
+  const pct = v => Math.round((Number(v)||0)*100);
+  const today = ()=>{ const x=new Date(); x.setHours(0,0,0,0); return x.toISOString().slice(0,10); };
+  const ymd   = d  =>{ const x=new Date(d); x.setHours(0,0,0,0); return x.toISOString().slice(0,10); };
+  const save  = ()=>{ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} };
+
+  $$('.tab').forEach(btn=> btn.addEventListener('click',()=>{
+    const tab=btn.dataset.tab;
+    $$('.tab').forEach(b=>b.setAttribute('aria-selected', b===btn));
+    $$('.view').forEach(v=> v.classList.toggle('active', v.id===tab));
+    if(tab==='dashboard') drawAll();
+    if(tab==='tarefa') renderTarefa();
+    if(tab==='agenda') renderAgenda();
+    if(tab==='dados') renderDados();
+  }));
+
+  let editingTema=null;
+  function clearDadosForm(){
+    $('#dArea').value=''; $('#dTema').value=''; $('#dStatus').value='Em estudo'; $('#dPrior').value='5'; $('#dDific').value='Médio';
+    $('#dRend').value=''; $('#dSess').value='0'; $('#dUlt').value=''; $('#dAgd').value=''; $('#dTempo').value='0'; $('#dObs').value=''; $('#dTipo').value='';
+    editingTema=null; $('#btnSaveTema').disabled=true; $('#btnCancelEdit').disabled=true; $('#btnAddTema').disabled=false;
+  }
+  function renderDados(){
+    const tbody=$('#tblDados tbody'); if(!tbody) return; tbody.innerHTML='';
+    state.dados.slice().sort((a,b)=>a.area.localeCompare(b.area)||a.tema.localeCompare(b.tema)).forEach(d=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = `<td>${d.area}</td><td><b>${d.tema}</b></td><td>${d.status||''}</td><td>${d.prior||''}</td><td>${d.dific||''}</td><td class='mono'>${pct(d.rend||0)}%</td><td class='mono'>${d.sess||0}</td><td class='mono'>${d.ultest||''}</td><td class='mono'>${d.agenda||''}</td><td class='mono'>${d.tempo||0}</td><td>${d.tipo||''}</td><td><button class='btn-ghost' data-edit="${d.tema}">Editar</button> <button class='btn-ghost' data-del="${d.tema}">Excluir</button></td>`;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('button[data-edit]').forEach(b=> b.onclick=()=> startEdit(b.getAttribute('data-edit')) );
+    tbody.querySelectorAll('button[data-del]').forEach(b=> b.onclick=()=> delTema(b.getAttribute('data-del')) );
+  }
+  function startEdit(tema){
+    const d=state.dados.find(x=>x.tema===tema); if(!d) return;
+    editingTema=tema;
+    $('#dArea').value=d.area||''; $('#dTema').value=d.tema||''; $('#dStatus').value=d.status||'Em estudo'; $('#dPrior').value=d.prior||'5'; $('#dDific').value=d.dific||'Médio'; $('#dRend').value=pct(d.rend||0); $('#dSess').value=d.sess||0; $('#dUlt').value=d.ultest||''; $('#dAgd').value=d.agenda||''; $('#dTempo').value=d.tempo||0; $('#dObs').value=d.obs||''; $('#dTipo').value=d.tipo||'';
+    $('#btnSaveTema').disabled=false; $('#btnCancelEdit').disabled=false; $('#btnAddTema').disabled=true;
+  }
+  function delTema(tema){
+    if(!confirm('Excluir tema "'+tema+'"?')) return;
+    const i=state.dados.findIndex(x=>x.tema===tema); if(i>=0) state.dados.splice(i,1);
+    for(let j=state.hist.length-1;j>=0;j--) if(state.hist[j].tema===tema) state.hist.splice(j,1);
+    save(); renderDados(); fillTema(); drawAll();
+  }
+  function formToTema(){
+    const area=$('#dArea').value.trim(); const tema=$('#dTema').value.trim(); if(!area||!tema){ alert('Preencha Área e Tema'); return null; }
+    return { area: titleCase(area), tema, status: $('#dStatus').value, prior: $('#dPrior').value, dific: $('#dDific').value, rend: to01($('#dRend').value), sess: Number($('#dSess').value||0), ultest: $('#dUlt').value||'', agenda: $('#dAgd').value||'', tempo: Number($('#dTempo').value||0), obs: $('#dObs').value||'', tipo: $('#dTipo').value||'Revisão ativa' };
+  }
+  function addTema(){ const item=formToTema(); if(!item) return; if(state.dados.some(x=>x.tema===item.tema)) return alert('Tema já existe. Edite ao invés de duplicar.'); state.dados.push(item); save(); clearDadosForm(); renderDados(); fillTema(); drawAll(); }
+  function saveTema(){ if(!editingTema) return; const i=state.dados.findIndex(x=>x.tema===editingTema); if(i<0) return; const item=formToTema(); if(!item) return; state.dados[i]=item; state.hist.forEach(h=>{ if(h.tema===editingTema) h.area=item.area; }); save(); clearDadosForm(); renderDados(); fillTema(); drawAll(); }
+  document.getElementById('btnAddTema').onclick=addTema; document.getElementById('btnSaveTema').onclick=saveTema; document.getElementById('btnCancelEdit').onclick=clearDadosForm;
+
+  function fillTema(){ const sel=$('#fbTema'); if(!sel) return; sel.innerHTML=''; state.dados.map(d=>d.tema).sort((a,b)=>a.localeCompare(b)).forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); }); onTemaChange(); }
+  function onTemaChange(){ const t=$('#fbTema').value; const d=state.dados.find(x=>x.tema===t); $('#fbArea').value = d? d.area:''; }
+  $('#fbTema') && $('#fbTema').addEventListener('change', onTemaChange);
+
+  function registrar(){
+    const tema=$('#fbTema').value; if(!tema) return alert('Selecione um tema.');
+    const d=state.dados.find(x=>x.tema===tema); if(!d) return alert('Tema não encontrado.');
+    const data=$('#fbData').value||today(); const rend01=to01($('#fbRend').value); const tempo=Number($('#fbTempo').value)||0;
+    const dific=$('#fbDific').value; const status=$('#fbStatus').value; const prior=$('#fbPrior').value; const obs=($('#fbObs').value||'').trim(); const sug=($('#fbSug').value||'').trim();
+    state._log.push({tema: tema, snapshot: JSON.parse(JSON.stringify(d))});
+    d.status=status||d.status; d.prior=prior||d.prior; d.dific=dific||d.dific; d.rend=rend01||d.rend||0;
+    d.sess=(d.sess||0)+1; d.ultest=data; d.tempo=(d.tempo||0)+(tempo>0?tempo:0);
+    const base=(d.sess-1); let inter=1; if(base===0) inter=1; else if(rend01<0.5) inter=1; else if(rend01<0.8) inter=3; else if(base<3) inter=7; else if(base<4) inter=14; else if(base<5) inter=30; else inter=60;
+    const prox=new Date(data); prox.setDate(prox.getDate()+inter); d.agenda=ymd(prox);
+    d.tipo = sug || (rend01<0.8? 'Revisão ativa + Teoria':'Revisão ativa');
+    if(obs) d.obs=(d.obs?d.obs+'\n':'') + (data+': '+obs + (sug? ' | Sugestão: '+sug:''));
+    state.hist.push({data: data, area: d.area, tema: d.tema, rend: d.rend, sess: d.sess, tempo: (tempo>0?tempo:0), dific: dific, obs: obs});
+    save(); fillTema(); renderTarefa(); renderAgenda(); drawAll(); alert('✅ Registrado: '+tema);
+  }
+  function desfazer(){
+    const tema=$('#fbTema').value; if(!tema) return alert('Selecione o tema.');
+    for(let i=state._log.length-1;i>=0;i--){
+      if(state._log[i].tema===tema){
+        const snap=state._log[i].snapshot; const idx=state.dados.findIndex(x=>x.tema===tema);
+        if(idx>=0) state.dados[idx]=snap;
+        for(let j=state.hist.length-1;j>=0;j--) if(state.hist[j].tema===tema){ state.hist.splice(j,1); break; }
+        state._log.splice(i,1); save(); fillTema(); renderTarefa(); renderAgenda(); drawAll(); alert('↩️ Desfeito: '+tema); return;
+      }
+    }
+    alert('Nada a desfazer para este tema.');
+  }
+  document.getElementById('btnRegistrar') && ($('#btnRegistrar').onclick=registrar);
+  document.getElementById('btnDesfazer') && ($('#btnDesfazer').onclick=desfazer);
+
+  function renderTarefa(){
+    const tbody=$('#tblTarefa tbody'); if(!tbody) return; tbody.innerHTML=''; const hoje=today();
+    state.dados.filter(d=>(['Em estudo','Planejado'].includes(d.status)) && d.agenda && d.agenda<=hoje).forEach(d=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td><input type="checkbox"/></td><td>${d.area}</td><td><b>${d.tema}</b></td><td>${d.status}</td><td>${d.prior}</td><td>${d.dific||''}</td><td class="mono">${pct(d.rend)}%</td><td class="mono">${d.sess||0}</td><td class="mono">${d.ultest||''}</td><td class="mono">${d.agenda||''}</td><td>${d.tipo||''}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+  function renderAgenda(){
+    const tbody=$('#tblAgenda tbody'); if(!tbody) return; tbody.innerHTML='';
+    state.dados.slice().sort((a,b)=>(a.agenda||'').localeCompare(b.agenda||'')).forEach(d=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${d.area}</td><td><b>${d.tema}</b></td><td>${d.status}</td><td>${d.prior}</td><td>${d.dific||''}</td><td class="mono">${pct(d.rend)}%</td><td class="mono">${d.sess||0}</td><td class="mono">${d.ultest||''}</td><td class="mono">${d.agenda||''}</td><td class="mono">${d.tipo||''}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function colorByArea(name){ const s=String(name||'Outro'); let h=0; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; const hue=h%360; return `hsl(${hue} 70% 50%)`; }
+  function groupByArea(){ const areas={}, order=[]; state.hist.forEach(h=>{ const a=titleCase(h.area||'Outro'); if(!areas[a]){ areas[a]={sum:0,count:0,seq:[]}; order.push(a); } if(typeof h.rend==='number'){ areas[a].sum+=h.rend; areas[a].count++; areas[a].seq.push(Math.round((h.rend||0)*100)); } }); return {areas,order}; }
+  function drawBars(canvas, labels, values){ const ctx=canvas.getContext('2d'); const W=canvas.width, H=canvas.height; ctx.clearRect(0,0,W,H); const pad=32; const max=Math.max(...values,1); const n=labels.length||1; const bw=(W-pad*2)/n*0.72, gap=(W-pad*2)/n*0.28; ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.beginPath(); ctx.moveTo(pad,H-pad); ctx.lineTo(W-pad,H-pad); ctx.stroke(); values.forEach((v,i)=>{ const x=pad+i*(bw+gap); const h=(v/max)*(H-pad*2); ctx.fillStyle=colorByArea(labels[i]); ctx.fillRect(x,H-pad-h,bw,h); ctx.fillStyle='#cfe8e6'; ctx.font='12px system-ui'; ctx.textAlign='center'; ctx.fillText(labels[i], x+bw/2, H-pad+14); ctx.fillStyle='#eafdfd'; ctx.font='bold 12px system-ui'; ctx.fillText(v+'%', x+bw/2, H-pad-h-6); }); }
+  function drawLine(canvas, labels, series){ const ctx=canvas.getContext('2d'); const W=canvas.width, H=canvas.height; ctx.clearRect(0,0,W,H); const pad=36; const flat=series.flat().filter(x=>x!=null); const max=Math.max(100, ...(flat.length? flat:[100])); const steps=Math.max(...series.map(s=>s.length),1); const xFor=i=> pad + (i/(Math.max(steps-1,1)))*(W-pad*2); const yFor=v=> H-pad - ((v||0)/max)*(H-pad*2); ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.beginPath(); ctx.moveTo(pad,H-pad); ctx.lineTo(W-pad,H-pad); ctx.moveTo(pad,pad); ctx.lineTo(pad,H-pad); ctx.stroke(); series.forEach((s,si)=>{ const col=colorByArea(labels[si]); ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath(); s.forEach((v,i)=>{ const x=xFor(i); const y=yFor(v); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }); ctx.stroke(); s.forEach((v,i)=>{ const x=xFor(i); const y=yFor(v); ctx.fillStyle=col; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill(); }); }); }
+  function drawRadar(canvas, labels, values){ const ctx=canvas.getContext('2d'); const W=canvas.width,H=canvas.height; ctx.clearRect(0,0,W,H); const cx=W/2, cy=H/2, r=Math.min(W,H)*0.35; const N=labels.length||1; ctx.strokeStyle='rgba(255,255,255,.12)'; for(let k=1;k<=4;k++){ ctx.beginPath(); for(let i=0;i<N;i++){ const a=(i/N)*2*Math.PI - Math.PI/2; const rr=r*(k/4); const x=cx+rr*Math.cos(a), y=cy+rr*Math.sin(a); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.closePath(); ctx.stroke(); } for(let i=0;i<N;i++){ const a=(i/N)*2*Math.PI - Math.PI/2; const x=cx+r*Math.cos(a), y=cy+r*Math.sin(a); ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(x,y); ctx.stroke(); } ctx.fillStyle='rgba(31,185,181,.18)'; ctx.strokeStyle='rgba(31,185,181,.85)'; ctx.lineWidth=2; ctx.beginPath(); for(let i=0;i<N;i++){ const a=(i/N)*2*Math.PI - Math.PI/2; const rr=r*((values[i]||0)/100); const x=cx+rr*Math.cos(a), y=cy+rr*Math.sin(a); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle='#d2f7f6'; ctx.font='12px system-ui'; ctx.textAlign='center'; for(let i=0;i<N;i++){ const a=(i/N)*2*Math.PI - Math.PI/2; const x=cx+(r+14)*Math.cos(a), y=cy+(r+14)*Math.sin(a); ctx.fillText(labels[i]||'', x,y); } }
+  function drawAll(){ try{ const g=groupByArea(); const order=g.order; const areas=g.areas; if(!order.length){ ['barAreas','lineSessoes','radarAreas'].forEach(id=>{const c=document.getElementById(id); if(c) c.getContext('2d').clearRect(0,0,c.width,c.height);}); document.getElementById('legendAreas').innerHTML='<span class="mono" style="color:#cfe8e6">Sem dados suficientes.</span>'; return; } const labels=order; const vals=order.map(a=>{ const m=areas[a]; return m.count? Math.round((m.sum/m.count)*100):0; }); drawBars(document.getElementById('barAreas'), labels, vals); document.getElementById('legendAreas').innerHTML = order.map(a=>`<span style="display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border:1px solid rgba(255,255,255,.15);border-radius:999px;font-size:12px"><i style="width:14px;height:14px;border-radius:4px;background:${colorByArea(a)}"></i>${a}</span>`).join(''); const series=order.map(a=>areas[a].seq); drawLine(document.getElementById('lineSessoes'), labels, series); drawRadar(document.getElementById('radarAreas'), labels, vals); } catch(e){ console.error(e); } }
+
+  function download(name, text, mime='text/plain'){ const blob = new Blob([text], {type:mime}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href), 3000); }
+  document.getElementById('btnCsvDados')?.addEventListener('click', ()=>{ const hdr=['Área','Tema','Status','Prior.','Dific.','Rend.','Sessões','Últ.estudo','Agenda','Tempo(min)','Obs.','Tipo']; const rows = state.dados.map(d=>[d.area,d.tema,d.status||'',d.prior||'',d.dific||'', Math.round((d.rend||0)*100)+'%', d.sess||0, d.ultest||'', d.agenda||'', d.tempo||0, d.obs||'', d.tipo||'']); const csv=[hdr].concat(rows).map(r=> r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'); download('DADOS.csv', csv, 'text/csv'); });
+  document.getElementById('btnCsvHist')?.addEventListener('click', ()=>{ const hdr=['Data','Área','Tema','Rendimento','Sessões','Tempo(min)','Dificuldade','Observações']; const rows = state.hist.map(h=>[h.data,h.area,h.tema, Math.round((h.rend||0)*100)+'%', h.sess||0, h.tempo||0, h.dific||'', h.obs||'']); const csv=[hdr].concat(rows).map(r=> r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n'); download('HISTORICO.csv', csv, 'text/csv'); });
+
+  function parseCsv(text){ const lines=text.split(/\r?\n/).filter(l=>l.length); const out=[]; for(const l of lines){ let cur='',q=false,row=[]; for(let i=0;i<l.length;i++){ const ch=l[i]; if(ch=='"'){ if(q && l[i+1]=='"'){cur+='"'; i++;} else q=!q; continue; } if(ch==',' && !q){ row.push(cur); cur=''; continue; } cur+=ch; } row.push(cur); out.push(row);} return out; }
+  function importCsv(file, kind){ const reader=new FileReader(); reader.onload=()=>{ const cells=parseCsv(reader.result); if(!cells.length) return alert('CSV vazio'); const hdr = cells.shift().map(s=>s.trim().toLowerCase()); const idx = n => hdr.indexOf(n.toLowerCase()); if(kind==='dados'){ const out=[]; for(const r of cells){ const tema=(r[idx('tema')]||'').toString().trim(); if(!tema) continue; out.push({ area:titleCase(r[idx('área')]||r[idx('area')]), tema, status:r[idx('status')]||'Em estudo', prior:r[idx('prior.')]||r[idx('prior')]||'5', dific:r[idx('dific.')]||r[idx('dific')]||'', rend:to01(r[idx('rend.')]||r[idx('rendimento')]), sess:Number(r[idx('sessões')]||r[idx('sessoes')]||0), ultest:r[idx('últ.estudo')]||r[idx('ult.estudo')]||'', agenda:r[idx('agenda')]||'', tempo:Number(r[idx('tempo(min)')]||0), obs:r[idx('obs.')]||r[idx('observações')]||'', tipo:r[idx('tipo')]||'' }); } state.dados=out; } else { const out=[]; for(const r of cells){ const tema=(r[idx('tema')]||'').toString().trim(); if(!tema) continue; out.push({ data:r[idx('data')]||'', area:titleCase(r[idx('área')]||r[idx('area')]), tema, rend:to01(r[idx('rendimento')]||r[idx('rend')]), sess:Number(r[idx('sessões')]||r[idx('sessoes')]||0), tempo:Number(r[idx('tempo(min)')]||0), dific:r[idx('dificuldade')]||'', obs:r[idx('observações')]||r[idx('obs')]||'' }); } state.hist=out; } save(); renderDados(); fillTema(); renderTarefa(); renderAgenda(); drawAll(); alert('Importado com sucesso!'); }; reader.readAsText(file); }
+  document.getElementById('fileCsvDados')?.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(f) importCsv(f,'dados'); });
+  document.getElementById('fileCsvHist') ?.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(f) importCsv(f,'hist'); });
+
+  document.getElementById('btnExport').onclick=()=>{ const blob=new Blob([JSON.stringify({dados:state.dados, hist:state.hist},null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='vrvs_backup.json'; a.click(); URL.revokeObjectURL(url); };
+  document.getElementById('fileImport').onchange=e=>{ const f=e.target.files&&e.target.files[0]; if(f){ const r=new FileReader(); r.onload=()=>{ try{ const j=JSON.parse(r.result); state.dados=j.dados||[]; state.hist=j.hist||[]; save(); renderDados(); fillTema(); renderTarefa(); renderAgenda(); drawAll(); alert('Backup importado!'); }catch(err){ alert('JSON inválido'); } }; r.readAsText(f); } };
+  document.getElementById('btnReset').onclick=()=>{ if(confirm('Apagar dados salvos e reiniciar?')){ localStorage.removeItem(LS_KEY); location.reload(); } };
+
+  (function boot(){
+    try{ const saved = JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(saved){ state.dados=saved.dados||[]; state.hist=saved.hist||[]; } }catch(e){}
+    const fbData = document.getElementById('fbData'); if(fbData) fbData.value = today();
+    fillTema(); renderDados(); renderTarefa(); renderAgenda(); drawAll();
+  })();
+})();</script>
+</body>
+</html>
